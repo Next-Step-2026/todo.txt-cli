@@ -1,0 +1,31 @@
+#!/bin/bash
+# Uso: ./todo.sh deadline <id_task> <yyyy-mm-dd>
+
+TASK_ID=$1
+DEADLINE=$2
+
+# Validação básica
+if [ -z "$TASK_ID" ] || [ -z "$DEADLINE" ]; then
+    echo "Uso: todo.sh deadline <Numero_da_Tarefa> <yyyy-mm-dd>"
+    exit 1
+fi
+
+# O todo.sh já nos dá a variável $TODO_FILE com o caminho do arquivo!
+
+# 1. Checa se a tarefa (linha) existe
+if [ "$TASK_ID" -gt "$(wc -l < "$TODO_FILE")" ]; then
+    echo "Erro: A tarefa $TASK_ID não existe."
+    exit 1
+fi
+
+# 2. Converte a data para Timestamp Unix (A tag 'due' do seu backlog)
+# Adicionei 23:59:59 para o prazo ser até o final do dia escolhido
+TIMESTAMP=$(date -d "$DEADLINE 23:59:59" +%s)
+
+# 3. UPDATE: Se já existir um 'due:12345', remove ele primeiro para não duplicar
+sed -i "${TASK_ID}s/ due:[0-9]*//g" "$TODO_FILE"
+
+# 4. ADD: Adiciona o novo deadline no final da linha
+sed -i "${TASK_ID}s/$/ due:$TIMESTAMP/" "$TODO_FILE"
+
+echo "Deadline configurado para a tarefa $TASK_ID com sucesso! (Timestamp: $TIMESTAMP)"
