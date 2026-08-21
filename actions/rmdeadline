@@ -12,4 +12,4 @@ fi
 
 sed -i.bak "${TASK_ID}s/ due:[0-9]*//g" "$TODO_FILE"
 
-echo "Deadline removido da tarefa $TASK_ID (se existia)."
+echo "Deadline removido da tarefa $TASK_ID."
