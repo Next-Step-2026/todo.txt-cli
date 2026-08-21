@@ -1,8 +1,3 @@
-Aqui está um modelo completo de **README.md** que você pode colocar na raiz do projeto ou dentro da pasta `actions/` para a sua equipe.
-
-Ele documenta exatamente o que construímos na V1 e explica a arquitetura para os próximos desenvolvedores que forem pegar a V2.
-
----
 
 # ⏱️ Extensões da Equipe: Todo.txt CLI (Backlog V1)
 
