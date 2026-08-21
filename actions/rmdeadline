@@ -1,6 +1,8 @@
 #!/bin/bash
 # Uso: ./todo.sh rmdeadline <id_task>
 
+shift # Pula o $1 (que é a palavra 'rmdeadline')
+
 TASK_ID=$1
 
 if [ -z "$TASK_ID" ]; then
@@ -8,7 +10,6 @@ if [ -z "$TASK_ID" ]; then
     exit 1
 fi
 
-# O comando 'sed' vai na linha $TASK_ID e substitui ' due:NUMEROS' por NADA
-sed -i "${TASK_ID}s/ due:[0-9]*//g" "$TODO_FILE"
+sed -i.bak "${TASK_ID}s/ due:[0-9]*//g" "$TODO_FILE"
 
 echo "Deadline removido da tarefa $TASK_ID (se existia)."
