@@ -1,27 +1,26 @@
 #!/bin/bash
 # Add-on da Equipe para suportar a flag -d (deadline)
 
+shift # Pula o $1 (que é a palavra 'add')
+
 TEM_DEADLINE=0
 TAREFA_FINAL=""
 
-# 1. Varre todos os argumentos digitados ($1, $2...) procurando o "-d"
+# 1. Varre todos os argumentos digitados
 while [[ $# -gt 0 ]]; do
     if [ "$1" == "-d" ]; then
         TEM_DEADLINE=1
         DEADLINE="$2"
-        shift 2 # Pula a flag '-d' e a data, pois não queremos elas no texto da tarefa
+        shift 2
     else
         TAREFA_FINAL="$TAREFA_FINAL $1"
-        shift # Pula para a próxima palavra
+        shift
     fi
 done
 
-# 2. Se a flag foi encontrada, calcula o timestamp (formato yyyy-mm-dd)
 if [ "$TEM_DEADLINE" -eq 1 ]; then
     TIMESTAMP=$(date -d "$DEADLINE 23:59:59" +%s)
     TAREFA_FINAL="$TAREFA_FINAL due:$TIMESTAMP"
 fi
 
-# 3. Chama a função de adicionar nativa do todo.sh
-# O uso da palavra "command" é vital para não gerar um loop infinito chamando este próprio arquivo!
 "$TODO_FULL_SH" command add $TAREFA_FINAL
