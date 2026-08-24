@@ -7,7 +7,7 @@ This test checks that alarme.sh passes a custom message to notify-send.
 . ./test-lib.sh
 
 cat > notify-send <<'EOF'
-#!/usr/bin/
+#!/usr/bin/env bash
 printf '%s\n' "$*" > notify-output
 EOF
 chmod +x notify-send

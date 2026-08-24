@@ -31,5 +31,5 @@ echo "Alarme configurado! O pop-up vai aparecer em $ESPERA segundos..."
 # Pausa a execução silenciosamente até o momento do aviso
 sleep $ESPERA
 
-# Dispara o pop-up nativo do sistema com a mensagem fixa
+# Dispara o pop-up nativo do sistema com a mensagem configurada
 notify-send "⏰ Lembrete de Tarefa" "$MENSAGEM"
