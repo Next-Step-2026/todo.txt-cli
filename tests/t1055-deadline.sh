@@ -15,7 +15,7 @@ test_todo_session 'add and display a deadline' <<'EOF'
 1 prepare breakfast due:13/02/2009 23:59
 TODO: 1 added.
 
->>> todo.sh ls
+>>> todo.sh -p ls
 1 prepare breakfast due:13/02/2009 23:59
 --
 TODO: 1 of 1 tasks shown
@@ -25,7 +25,7 @@ test_todo_session 'change and remove a deadline' <<'EOF'
 >>> todo.sh deadline 1 2009-02-14
 Deadline configurado para a tarefa 1 com sucesso! (Timestamp: 1234655999)
 
->>> todo.sh ls
+>>> todo.sh -p ls
 1 prepare breakfast due:14/02/2009 23:59
 --
 TODO: 1 of 1 tasks shown
@@ -33,7 +33,7 @@ TODO: 1 of 1 tasks shown
 >>> todo.sh rmdeadline 1
 Deadline removido da tarefa 1.
 
->>> todo.sh ls
+>>> todo.sh -p ls
 1 prepare breakfast
 --
 TODO: 1 of 1 tasks shown
@@ -47,7 +47,7 @@ ordinary metadata due:2018-12-31
 EOF
 
 test_todo_session 'hide only expired numeric deadlines' <<'EOF'
->>> todo.sh ls
+>>> todo.sh -p ls
 2 current task due:13/02/2009 04:40
 3 future task due:13/02/2009 05:40
 4 ordinary metadata due:2018-12-31
@@ -55,6 +55,16 @@ test_todo_session 'hide only expired numeric deadlines' <<'EOF'
 TODO: 3 of 4 tasks shown
 
 EOF
+
+cat > todo.txt <<'EOF'
+far task start:1234400000 due:1234600000
+soon task start:1234400000 due:1234518000
+EOF
+test_expect_success 'deadline is soon in the final 25 percent' '
+	output=$(todo.sh -c listfile todo.txt) &&
+	printf "%s\n" "$output" | grep -Fq "soon task $(printf "\\033[1;33m")due:" &&
+	! printf "%s\n" "$output" | grep -Fq "far task $(printf "\\033[1;33m")due:"
+'
 
 test_todo_session 'alarm rejects invalid deadlines' <<EOF
 >>> bash "$TEST_DIRECTORY/../actions/alarme.sh"

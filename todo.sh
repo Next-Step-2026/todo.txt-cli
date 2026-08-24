@@ -666,6 +666,7 @@ TODOTXT_DEFAULT_ACTION=${TODOTXT_DEFAULT_ACTION:-}
 TODOTXT_SORT_COMMAND=${TODOTXT_SORT_COMMAND:-env LC_COLLATE=C sort -f -k2}
 TODOTXT_DISABLE_FILTER=${TODOTXT_DISABLE_FILTER:-}
 TODOTXT_FINAL_FILTER=${TODOTXT_FINAL_FILTER:-cat}
+TODOTXT_DEADLINE_SOON=${TODOTXT_DEADLINE_SOON:-86400}
 TODOTXT_GLOBAL_CFG_FILE=${TODOTXT_GLOBAL_CFG_FILE:-/etc/todo/config}
 TODOTXT_SIGIL_BEFORE_PATTERN=${TODOTXT_SIGIL_BEFORE_PATTERN:-}    # Allow any other non-whitespace entity before +project and @context; should be an optional match; example: \(w:\)\{0,1\} to allow w:@context.
 TODOTXT_SIGIL_VALID_PATTERN=${TODOTXT_SIGIL_VALID_PATTERN:-.*}    # Limit the valid characters (from the default any non-whitespace sequence) for +project and @context; example: [a-zA-Z]\{3,\} to only allow alphabetic ones that are at least three characters long.
@@ -706,6 +707,9 @@ export COLOR_CONTEXT=$NONE
 export COLOR_DATE=$NONE
 export COLOR_NUMBER=$NONE
 export COLOR_META=$NONE
+export COLOR_DEADLINE=$NONE
+export COLOR_DEADLINE_SOON=$YELLOW
+export COLOR_DEADLINE_EXPIRED=$LIGHT_RED
 
 # Default highlight colors.
 export COLOR_DONE=$LIGHT_GREY   # color for done (but not yet archived) tasks
@@ -822,6 +826,9 @@ if [ "$TODOTXT_PLAIN" = 1 ]; then
     COLOR_DATE=$NONE
     COLOR_NUMBER=$NONE
     COLOR_META=$NONE
+    COLOR_DEADLINE=$NONE
+    COLOR_DEADLINE_SOON=$NONE
+    COLOR_DEADLINE_EXPIRED=$NONE
 fi
 
 [[ -n "$HIDE_PROJECTS_SUBSTITUTION" ]] && COLOR_PROJECT="$NONE"
@@ -890,8 +897,12 @@ _list()
     local transformed
     local line
     local timestamp
+    local start_timestamp
+    local deadline_duration
+    local deadline_remaining
     local formatted_date
     local now
+    local deadline_color_marker
     local expired_marker='__TODO_TXT_EXPIRED__'
     ## If the file starts with a "/" use absolute path. Otherwise,
     ## try to find it in either $TODO_DIR or using a relative path
@@ -915,21 +926,37 @@ _list()
     shift # was file name, new $1 is first search term
 
     transformed=$(mktemp "${TMPDIR:-/tmp}/todo-list-date.XXXXXX") || die "TODO: Could not create temporary file."
+    now=$(( $(date +%s) - 3 * 60 * 60 ))
     if [ "$TODOTXT_HIDE_EXPIRED" = 1 ]; then
-        now=$(( $(date +%s) - 3 * 60 * 60 ))
         post_filter_command="${post_filter_command:-}${post_filter_command:+ | }grep -v '$expired_marker'"
     fi
     while IFS= read -r line || [ -n "$line" ]; do
         if [[ "$line" =~ due:([0-9]+)([[:space:]]|$) ]]; then
             timestamp="${BASH_REMATCH[1]}"
+            start_timestamp=
+            if [[ "$line" =~ start:([0-9]+)([[:space:]]|$) ]]; then
+                start_timestamp="${BASH_REMATCH[1]}"
+            fi
             if [ "$TODOTXT_HIDE_EXPIRED" = 1 ] && [ "$timestamp" -lt "$now" ]; then
                 line="$expired_marker $line"
+            fi
+            if [ "$timestamp" -lt "$now" ]; then
+                deadline_color_marker='__TODO_TXT_DEADLINE_EXPIRED__'
+            elif [ -n "$start_timestamp" ] && [ "$timestamp" -gt "$start_timestamp" ] && [ "$((timestamp - now))" -le "$(((timestamp - start_timestamp) / 4))" ]; then
+                deadline_color_marker='__TODO_TXT_DEADLINE_SOON__'
+            elif [ -z "$start_timestamp" ] && [ "$timestamp" -le "$((now + TODOTXT_DEADLINE_SOON))" ]; then
+                deadline_color_marker='__TODO_TXT_DEADLINE_SOON__'
+            else
+                deadline_color_marker='__TODO_TXT_DEADLINE_DEFAULT__'
             fi
             formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
                 rm -f "$transformed"
                 die "TODO: Invalid deadline timestamp: $timestamp"
             }
-            line="${line//due:$timestamp/due:$formatted_date}"
+            line="${line//due:$timestamp/${deadline_color_marker}due:${formatted_date}__TODO_TXT_DEADLINE_END__}"
+            if [ -n "$start_timestamp" ]; then
+                line="${line// start:$start_timestamp/}"
+            fi
         fi
         printf '%s\n' "$line"
     done < "$src" > "$transformed"
@@ -1035,12 +1062,32 @@ _format()
 
                 met_beg = highlight("COLOR_META")
                 met_end = (met_beg ? (highlight("DEFAULT") clr) : "")
+                deadline_beg = ""
+                deadline_end = ""
+                deadline_start_marker = 0
+                deadline_end_marker = 0
 
                 gsub(/[ \t][ \t]*/, "\n&\n")
                 len = split($0, words, /\n/)
 
                 printf "%s", clr
                 for (i = 1; i <= len; ++i) {
+                    if (words[i] ~ /^__TODO_TXT_DEADLINE_(EXPIRED|SOON|DEFAULT)__/) {
+                        if (words[i] ~ /EXPIRED/) {
+                            deadline_beg = highlight("COLOR_DEADLINE_EXPIRED")
+                        } else if (words[i] ~ /SOON/) {
+                            deadline_beg = highlight("COLOR_DEADLINE_SOON")
+                        } else {
+                            deadline_beg = highlight("COLOR_DEADLINE")
+                        }
+                        deadline_end = (deadline_beg ? highlight("DEFAULT") clr : "")
+                        sub(/^__TODO_TXT_DEADLINE_(EXPIRED|SOON|DEFAULT)__/, "", words[i])
+                        deadline_start_marker = 1
+                    }
+                    if (words[i] ~ /__TODO_TXT_DEADLINE_END__$/) {
+                        sub(/__TODO_TXT_DEADLINE_END__$/, "", words[i])
+                        deadline_end_marker = 1
+                    }
                     if (i == 1 && words[i] ~ /^[0-9]+$/ ) {
                         printf "%s", num_beg words[i] num_end
                     } else if (words[i] ~ /^[+].*[A-Za-z0-9_]$/) {
@@ -1050,9 +1097,16 @@ _format()
                     } else if (words[i] ~ /^(19|20)[0-9][0-9]-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/) {
                         printf "%s", dat_beg words[i] dat_end
                     } else if (words[i] ~ /^[A-Za-z0-9]+:[^ ]+$/) {
-                        printf "%s", met_beg words[i] met_end
+                        printf "%s", (deadline_start_marker ? deadline_beg : (deadline_beg ? "" : met_beg)) words[i] (deadline_end_marker ? deadline_end : (deadline_beg ? "" : met_end))
                     } else {
-                        printf "%s", words[i]
+                        printf "%s", (deadline_start_marker ? deadline_beg : "") words[i] (deadline_end_marker ? deadline_end : "")
+                    }
+                    deadline_start_marker = 0
+                    if (deadline_end_marker) {
+                        deadline_beg = ""
+                        deadline_end = ""
+                        deadline_start_marker = 0
+                        deadline_end_marker = 0
                     }
                 }
                 printf "%s\n", end_clr

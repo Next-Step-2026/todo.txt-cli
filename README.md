@@ -27,6 +27,8 @@ export TODO_ACTIONS_DIR="$PWD/actions"
 
 Os metadados de prazo são salvos no final da tarefa utilizando o formato nativo de chave-valor: `due:<timestamp_unix>`. Isso garante compatibilidade com outras interfaces de todo.txt.
 
+Quando uma tarefa é criada com deadline, o início também é salvo como `start:<timestamp_unix>`. A cor amarela é aplicada quando o tempo restante está dentro dos 25% finais da duração da tarefa. Tarefas antigas sem `start:` usam a janela configurada em `TODOTXT_DEADLINE_SOON` como fallback.
+
 ### 1. Adicionar Tarefa com Prazo
 
 Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag `-d` (deadline).

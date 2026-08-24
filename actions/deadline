@@ -26,9 +26,19 @@ if [ -n "$DEADLINE_TIME" ] && [[ ! "$DEADLINE_TIME" =~ ^[0-9]{2}:[0-9]{2}(:[0-9]
     exit 1
 fi
 TIMESTAMP=$(date -d "$DEADLINE ${DEADLINE_TIME:-23:59:59}" +%s) || exit 1
+START_TIMESTAMP=$(( $(date +%s) - 3 * 60 * 60 ))
+
+# Preserve the original start when updating an existing deadline.
+CURRENT_TASK=$(sed -n "${TASK_ID}p" "$TODO_FILE")
+if [[ "$CURRENT_TASK" =~ start:([0-9]+)([[:space:]]|$) ]]; then
+    START_TIMESTAMP="${BASH_REMATCH[1]}"
+fi
 
 # 3. UPDATE: Remove deadline antigo (se existir)
 sed -i.bak "${TASK_ID}s/ due:[0-9]*//g" "$TODO_FILE"
+if ! [[ "$CURRENT_TASK" =~ start:[0-9]+([[:space:]]|$) ]]; then
+    sed -i.bak "${TASK_ID}s/$/ start:$START_TIMESTAMP/" "$TODO_FILE"
+fi
 
 # 4. ADD: Adiciona o novo deadline no final da linha
 sed -i.bak "${TASK_ID}s/$/ due:$TIMESTAMP/" "$TODO_FILE"

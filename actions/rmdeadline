@@ -10,6 +10,6 @@ if [ -z "$TASK_ID" ]; then
     exit 1
 fi
 
-sed -i.bak "${TASK_ID}s/ due:[0-9]*//g" "$TODO_FILE"
+sed -i.bak -e "${TASK_ID}s/ due:[0-9]*//g" -e "${TASK_ID}s/ start:[0-9]*//g" "$TODO_FILE"
 
 echo "Deadline removido da tarefa $TASK_ID."
