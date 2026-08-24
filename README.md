@@ -65,6 +65,14 @@ Preparamos um módulo de notificação visual via pop-up do sistema operacional.
 *(Nota: Utilize o `&` no final do comando no terminal para que o script rode em segundo plano sem travar a aba atual).*
 
 ---
+## Padrões de commits
+
+Para commits, usaremos o padrão de [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), em inglês
+
+- `<type>(optional scope): <description>`
+
+
+---
 
 ## 🔜 Próximos Passos (Backlog V2)
 
