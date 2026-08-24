@@ -531,9 +531,18 @@ transformDeadlines()
     local line
     local timestamp
     local formatted_date
+    local now
+    local expired_marker='__TODO_TXT_EXPIRED__'
+    if [ "$TODOTXT_HIDE_EXPIRED" = 1 ]; then
+        now=$(( $(date +%s) - 3 * 60 * 60 ))
+        post_filter_command="${post_filter_command:-}${post_filter_command:+ | }grep -v '$expired_marker'"
+    fi
     while IFS= read -r line || [ -n "$line" ]; do
         if [[ "$line" =~ due:([0-9]+) ]]; then
             timestamp="${BASH_REMATCH[1]}"
+            if [ "$TODOTXT_HIDE_EXPIRED" = 1 ] && [ "$timestamp" -lt "$now" ]; then
+                line="$expired_marker $line"
+            fi
             formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
                 die "TODO: Invalid deadline timestamp: $timestamp"
             }
@@ -909,6 +918,8 @@ _list()
     local line
     local timestamp
     local formatted_date
+    local now
+    local expired_marker='__TODO_TXT_EXPIRED__'
     ## If the file starts with a "/" use absolute path. Otherwise,
     ## try to find it in either $TODO_DIR or using a relative path
     if [ "${1:0:1}" == / ] && [ -f "$FILE" ]; then
@@ -931,7 +942,17 @@ _list()
     shift # was file name, new $1 is first search term
 
     transformed=$(mktemp "${TMPDIR:-/tmp}/todo-list-date.XXXXXX") || die "TODO: Could not create temporary file."
-    transformDeadlines "$src" > "$transformed"
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "$line" =~ due:([0-9]+) ]]; then
+            timestamp="${BASH_REMATCH[1]}"
+            formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
+                rm -f "$transformed"
+                die "TODO: Invalid deadline timestamp: $timestamp"
+            }
+            line="${line//due:$timestamp/due:$formatted_date}"
+        fi
+        printf '%s\n' "$line"
+    done < "$src" > "$transformed"
 
     _format "$transformed" '' "$@"
     rm -f "$transformed"
@@ -1356,6 +1377,7 @@ case $action in
 
 "list" | "ls")
     shift  # Was ls; new $1 is first search term
+    TODOTXT_HIDE_EXPIRED=1
     _list "$TODO_FILE" "$@"
     ;;
 
