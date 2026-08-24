@@ -2,11 +2,11 @@
 # Script/Função para gerar pop-ups de aviso
 # Fluxo: Chamada automaticamente ao final da função 'add_deadline'
 # Recebe: $1 = Timestamp (segundos Unix da data de expiração da tarefa)
+#         $2 = Mensagem personalizada do pop-up
 
 HORARIO=$1
 
-# MENSAGEM FIXA: Definida diretamente aqui temporariamente (não precisa passar via argumento)
-MENSAGEM="Sua tarefa expira em 1 minuto! Verifique o prazo."
+MENSAGEM=${2:-"Sua tarefa expira em 1 minuto! Verifique o prazo."}
 
 # Verifica se o timestamp de expiração foi enviado pela função add_deadline
 if [ -z "$HORARIO" ]; then
