@@ -17,7 +17,7 @@ while [[ $# -gt 0 ]]; do
             shift
         fi
     else
-        TAREFA_FINAL="$TAREFA_FINAL $1"
+        TAREFA_FINAL="${TAREFA_FINAL:+$TAREFA_FINAL }$1"
         shift
     fi
 done

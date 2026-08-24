@@ -920,7 +920,7 @@ _list()
         post_filter_command="${post_filter_command:-}${post_filter_command:+ | }grep -v '$expired_marker'"
     fi
     while IFS= read -r line || [ -n "$line" ]; do
-        if [[ "$line" =~ due:([0-9]+) ]]; then
+        if [[ "$line" =~ due:([0-9]+)([[:space:]]|$) ]]; then
             timestamp="${BASH_REMATCH[1]}"
             if [ "$TODOTXT_HIDE_EXPIRED" = 1 ] && [ "$timestamp" -lt "$now" ]; then
                 line="$expired_marker $line"
