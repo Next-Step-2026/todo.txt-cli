@@ -1,6 +1,6 @@
 #!/bin/bash
 # Script/Função para gerar pop-ups de aviso
-# Fluxo: Chamada automaticamente ao final da função 'add_deadline'
+# Fluxo: Chamada automaticamente ao final da ação 'deadline'
 # Recebe: $1 = Timestamp (segundos Unix da data de expiração da tarefa)
 #         $2 = Mensagem personalizada do pop-up
 
@@ -8,7 +8,7 @@ HORARIO=$1
 
 MENSAGEM=${2:-"Sua tarefa expira em 1 minuto! Verifique o prazo."}
 
-# Verifica se o timestamp de expiração foi enviado pela função add_deadline
+# Verifica se o timestamp de expiração foi enviado pela ação deadline
 if [ -z "$HORARIO" ]; then
     echo "Erro! Uso correto: ./alarme.sh <timestamp_expiracao>"
     exit 1
