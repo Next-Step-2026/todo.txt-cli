@@ -525,6 +525,24 @@ fixMissingEndOfLine()
     [[ -f $todo_path && $(tail -c1 "$todo_path") ]] && echo "" >> "$todo_path"    
 }
 
+transformDeadlines()
+{
+    local file="$1"
+    local line
+    local timestamp
+    local formatted_date
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "$line" =~ due:([0-9]+) ]]; then
+            timestamp="${BASH_REMATCH[1]}"
+            formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
+                die "TODO: Invalid deadline timestamp: $timestamp"
+            }
+            line="${line//due:$timestamp/due:$formatted_date}"
+        fi
+        printf '%s\n' "$line"
+    done < "$file"
+}
+
 uppercasePriority()
 {
     # Precondition:  $input contains task text for which to uppercase priority.
@@ -913,17 +931,7 @@ _list()
     shift # was file name, new $1 is first search term
 
     transformed=$(mktemp "${TMPDIR:-/tmp}/todo-list-date.XXXXXX") || die "TODO: Could not create temporary file."
-    while IFS= read -r line || [ -n "$line" ]; do
-        if [[ "$line" =~ due:([0-9]+) ]]; then
-            timestamp="${BASH_REMATCH[1]}"
-            formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
-                rm -f "$transformed"
-                die "TODO: Invalid deadline timestamp: $timestamp"
-            }
-            line="${line//due:$timestamp/due:$formatted_date}"
-        fi
-        printf '%s\n' "$line"
-    done < "$src" > "$transformed"
+    transformDeadlines "$src" > "$transformed"
 
     _format "$transformed" '' "$@"
     rm -f "$transformed"
@@ -1357,8 +1365,13 @@ case $action in
     TOTAL=$(sed -n '$ =' "$TODO_FILE")
     PADDING=${#TOTAL}
 
+    transformed=$(mktemp "${TMPDIR:-/tmp}/todo-listall-date.XXXXXX") || die "TODO: Could not create temporary file."
+    transformDeadlines "$TODO_FILE" > "$transformed"
+    transformDeadlines "$DONE_FILE" >> "$transformed"
+
     post_filter_command="${post_filter_command:-}${post_filter_command:+ | }awk -v TOTAL=$TOTAL -v PADDING=$PADDING '{ \$1 = sprintf(\"%\" PADDING \"d\", (\$1 > TOTAL ? 0 : \$1)); print }' "
-    cat "$TODO_FILE" "$DONE_FILE" | TODOTXT_VERBOSE=0 _format '' "$PADDING" "$@"
+    TODOTXT_VERBOSE=0 _format "$transformed" "$PADDING" "$@"
+    rm -f "$transformed"
 
     if [ "$TODOTXT_VERBOSE" -gt 0 ]; then
         TDONE=$(sed -n '$ =' "$DONE_FILE")
