@@ -5,16 +5,24 @@ shift # Pula o $1 (que é a palavra 'add')
 
 TEM_DEADLINE=0
 TAREFA_FINAL=""
+DEADLINE_ARGS=()
 
 # 1. Varre todos os argumentos digitados
 while [[ $# -gt 0 ]]; do
     if [ "$1" == "-d" ]; then
         TEM_DEADLINE=1
-        DEADLINE="$2"
-        shift 2
-        if [[ "$1" =~ ^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$ ]]; then
-            DEADLINE_TIME="$1"
-            shift
+        [ -z "$2" ] && { echo "Uso: todo.sh add \"TAREFA\" -d DATA [HORA] | -d m MINUTOS | -d h HORAS[:MINUTOS] | -d d DIAS"; exit 1; }
+        if [[ "$2" =~ ^[mhd]$ ]]; then
+            [ -z "$3" ] && { echo "Erro: valor do deadline não informado."; exit 1; }
+            DEADLINE_ARGS=("$2" "$3")
+            shift 3
+        else
+            DEADLINE_ARGS=("$2")
+            shift 2
+            if [[ "$1" =~ ^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$ ]]; then
+                DEADLINE_ARGS+=("$1")
+                shift
+            fi
         fi
     else
         TAREFA_FINAL="${TAREFA_FINAL:+$TAREFA_FINAL }$1"
@@ -29,7 +37,10 @@ if [ "$TEM_DEADLINE" -eq 1 ]; then
     TODOTXT_VERBOSE=0 "$TODO_FULL_SH" command add "$TAREFA_FINAL" || exit $?
 
     TASKNUM=$(sed -n '$ =' "$TODO_FILE")
+    "$TODO_FULL_SH" deadline "$TASKNUM" "${DEADLINE_ARGS[@]}" >/dev/null || exit $?
+
     TAREFA_EXIBIDA=$(sed -n "${TASKNUM}p" "$TODO_FILE")
+    TIMESTAMP=$(sed -n "${TASKNUM}p" "$TODO_FILE" | sed -n 's/.* due:\([0-9][0-9]*\).*/\1/p')
     DATA_EXIBIDA=$(date -d "@$TIMESTAMP" +"%d/%m/%Y %H:%M") || exit 1
     TAREFA_EXIBIDA="${TAREFA_EXIBIDA//due:$TIMESTAMP/due:$DATA_EXIBIDA}"
     TAREFA_EXIBIDA="${TAREFA_EXIBIDA// start:$START_TIMESTAMP/}"

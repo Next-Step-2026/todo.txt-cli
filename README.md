@@ -31,10 +31,11 @@ Quando uma tarefa é criada com deadline, o início também é salvo como `start
 
 ### 1. Adicionar Tarefa com Prazo
 
-Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag `-d` (deadline).
+Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag `-d` (deadline). Além do formato absoluto existente, ela aceita prazos relativos em minutos (`m`), horas (`h`) e dias (`d`).
 
-* **Uso:** `./todo.sh add <texto da tarefa> -d <yyyy-mm-dd>`
+* **Uso:** `./todo.sh add <texto da tarefa> -d <yyyy-mm-dd> [HH:MM]` ou `./todo.sh add <texto da tarefa> -d m <minutos>`, `-d h <horas[:minutos]>`, `-d d <dias>`
 * **Exemplo:** `./todo.sh add "Finalizar a documentação da API" -d 2026-08-30`
+* **Exemplo relativo:** `./todo.sh add "Finalizar a documentação da API" -d h 1:30`
 * **Comportamento:** O script intercepta a flag `-d`, converte a data para Timestamp Unix (final do dia) e repassa para a função `add` nativa.
 
 ### 2. Gerenciar Prazos (CRUD)
@@ -42,7 +43,7 @@ Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag
 Novos comandos dedicados para adicionar, alterar ou remover o deadline de uma tarefa existente utilizando o seu `id` (número da linha).
 
 * **Adicionar/Atualizar Prazo:**
-* **Uso:** `./todo.sh deadline <id_task> <yyyy-mm-dd>`
+* **Uso:** `./todo.sh deadline <id_task> <yyyy-mm-dd> [HH:MM]` ou `./todo.sh deadline <id_task> m <minutos>`, `h <horas[:minutos]>`, `d <dias>`
 * **Exemplo:** `./todo.sh deadline 3 2026-08-25`
 * **Comportamento:** Adiciona a tag `due:TIMESTAMP` à tarefa 3. Se a tarefa já possuía um deadline, o valor antigo é removido antes da inserção.
 
@@ -56,15 +57,25 @@ Novos comandos dedicados para adicionar, alterar ou remover o deadline de uma ta
 
 ---
 
-## ⏰ Módulo Independente de Alarme
+## ⏰ Módulo de Alarme
 
-Preparamos um módulo de notificação visual via pop-up do sistema operacional. Ele foi construído de forma independente para ser facilmente acoplado a futuros scripts da V2 (como um daemon ou cron job).
+O módulo envia uma notificação visual via pop-up do sistema operacional. A ação
+`deadline` o inicia automaticamente em segundo plano após salvar o timestamp,
+para exibir o aviso um minuto antes do prazo.
 
-* **Uso:** `./actions/alarme.sh "<horário>" "<mensagem do popup>"`
-* **Exemplo (Horário fixo):** `./actions/alarme.sh "15:30" "Reunião de Alinhamento" &`
-* **Exemplo (Tempo relativo):** `./actions/alarme.sh "+10 minutes" "Levantar e beber água" &`
+* **Uso automático:** `./todo.sh deadline <id_task> <yyyy-mm-dd> [HH:MM[:SS]]`
+* **Uso direto:** `bash ./actions/alarme.sh "<timestamp>" "<mensagem do popup>" &`
 
-*(Nota: Utilize o `&` no final do comando no terminal para que o script rode em segundo plano sem travar a aba atual).*
+O alarme recebe o timestamp Unix salvo na tag `due:` e usa uma mensagem padrão
+quando nenhuma mensagem personalizada é informada.
+
+---
+## Padrões de commits
+
+Para commits, usaremos o padrão de [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), em inglês
+
+- `<type>(optional scope): <description>`
+
 
 ---
 

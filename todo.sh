@@ -525,6 +525,33 @@ fixMissingEndOfLine()
     [[ -f $todo_path && $(tail -c1 "$todo_path") ]] && echo "" >> "$todo_path"    
 }
 
+transformDeadlines()
+{
+    local file="$1"
+    local line
+    local timestamp
+    local formatted_date
+    local now
+    local expired_marker='__TODO_TXT_EXPIRED__'
+    if [ "$TODOTXT_HIDE_EXPIRED" = 1 ]; then
+        now=$(( $(date +%s) - 3 * 60 * 60 ))
+        post_filter_command="${post_filter_command:-}${post_filter_command:+ | }grep -v '$expired_marker'"
+    fi
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "$line" =~ due:([0-9]+) ]]; then
+            timestamp="${BASH_REMATCH[1]}"
+            if [ "$TODOTXT_HIDE_EXPIRED" = 1 ] && [ "$timestamp" -lt "$now" ]; then
+                line="$expired_marker $line"
+            fi
+            formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
+                die "TODO: Invalid deadline timestamp: $timestamp"
+            }
+            line="${line//due:$timestamp/due:$formatted_date}"
+        fi
+        printf '%s\n' "$line"
+    done < "$file"
+}
+
 uppercasePriority()
 {
     # Precondition:  $input contains task text for which to uppercase priority.
@@ -897,12 +924,8 @@ _list()
     local transformed
     local line
     local timestamp
-    local start_timestamp
-    local deadline_duration
-    local deadline_remaining
     local formatted_date
     local now
-    local deadline_color_marker
     local expired_marker='__TODO_TXT_EXPIRED__'
     ## If the file starts with a "/" use absolute path. Otherwise,
     ## try to find it in either $TODO_DIR or using a relative path
@@ -926,37 +949,21 @@ _list()
     shift # was file name, new $1 is first search term
 
     transformed=$(mktemp "${TMPDIR:-/tmp}/todo-list-date.XXXXXX") || die "TODO: Could not create temporary file."
-    now=$(( $(date +%s) - 3 * 60 * 60 ))
     if [ "$TODOTXT_HIDE_EXPIRED" = 1 ]; then
+        now=$(( $(date +%s) - 3 * 60 * 60 ))
         post_filter_command="${post_filter_command:-}${post_filter_command:+ | }grep -v '$expired_marker'"
     fi
     while IFS= read -r line || [ -n "$line" ]; do
-        if [[ "$line" =~ due:([0-9]+)([[:space:]]|$) ]]; then
+        if [[ "$line" =~ due:([0-9]+) ]]; then
             timestamp="${BASH_REMATCH[1]}"
-            start_timestamp=
-            if [[ "$line" =~ start:([0-9]+)([[:space:]]|$) ]]; then
-                start_timestamp="${BASH_REMATCH[1]}"
-            fi
             if [ "$TODOTXT_HIDE_EXPIRED" = 1 ] && [ "$timestamp" -lt "$now" ]; then
                 line="$expired_marker $line"
-            fi
-            if [ "$timestamp" -lt "$now" ]; then
-                deadline_color_marker='__TODO_TXT_DEADLINE_EXPIRED__'
-            elif [ -n "$start_timestamp" ] && [ "$timestamp" -gt "$start_timestamp" ] && [ "$((timestamp - now))" -le "$(((timestamp - start_timestamp) / 4))" ]; then
-                deadline_color_marker='__TODO_TXT_DEADLINE_SOON__'
-            elif [ -z "$start_timestamp" ] && [ "$timestamp" -le "$((now + TODOTXT_DEADLINE_SOON))" ]; then
-                deadline_color_marker='__TODO_TXT_DEADLINE_SOON__'
-            else
-                deadline_color_marker='__TODO_TXT_DEADLINE_DEFAULT__'
             fi
             formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
                 rm -f "$transformed"
                 die "TODO: Invalid deadline timestamp: $timestamp"
             }
-            line="${line//due:$timestamp/${deadline_color_marker}due:${formatted_date}__TODO_TXT_DEADLINE_END__}"
-            if [ -n "$start_timestamp" ]; then
-                line="${line// start:$start_timestamp/}"
-            fi
+            line="${line//due:$timestamp/due:$formatted_date}"
         fi
         printf '%s\n' "$line"
     done < "$src" > "$transformed"
@@ -1421,8 +1428,13 @@ case $action in
     TOTAL=$(sed -n '$ =' "$TODO_FILE")
     PADDING=${#TOTAL}
 
+    transformed=$(mktemp "${TMPDIR:-/tmp}/todo-listall-date.XXXXXX") || die "TODO: Could not create temporary file."
+    transformDeadlines "$TODO_FILE" > "$transformed"
+    transformDeadlines "$DONE_FILE" >> "$transformed"
+
     post_filter_command="${post_filter_command:-}${post_filter_command:+ | }awk -v TOTAL=$TOTAL -v PADDING=$PADDING '{ \$1 = sprintf(\"%\" PADDING \"d\", (\$1 > TOTAL ? 0 : \$1)); print }' "
-    cat "$TODO_FILE" "$DONE_FILE" | TODOTXT_VERBOSE=0 _format '' "$PADDING" "$@"
+    TODOTXT_VERBOSE=0 _format "$transformed" "$PADDING" "$@"
+    rm -f "$transformed"
 
     if [ "$TODOTXT_VERBOSE" -gt 0 ]; then
         TDONE=$(sed -n '$ =' "$DONE_FILE")
