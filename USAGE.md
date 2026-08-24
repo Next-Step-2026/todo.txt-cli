@@ -71,15 +71,27 @@ todo.sh deduplicate
 ```
 
 ### `deadline`
-Adds or updates the deadline of the task on line NR. The date must use
-`yyyy-mm-dd`; the time is optional and accepts `HH:MM` or `HH:MM:SS`. If no
-time is provided, the deadline is set to the end of that day (`23:59:59`).
+Adds or updates the deadline of the task on line NR. The existing absolute
+format uses `yyyy-mm-dd`; the time is optional and accepts `HH:MM` or
+`HH:MM:SS`. Relative deadlines use `m` for minutes, `h` for hours and `d` for
+days. Hours accept `H` or `H:MM`.
 
 The deadline is stored in the task as the `due:<unix_timestamp>` metadata.
 
 ```shell
 todo.sh deadline NR yyyy-mm-dd [HH:MM[:SS]]
 todo.sh deadline 3 2026-08-25 14:30
+todo.sh deadline NR m MINUTES
+todo.sh deadline NR h HOURS[:MINUTES]
+todo.sh deadline NR d DAYS
+```
+
+When adding a task, the same relative formats can be used after `-d`:
+
+```shell
+todo.sh add -d m 30 "Review the report"
+todo.sh add -d h 1:30 "Attend the meeting"
+todo.sh add -d d 7 "Renew the contract"
 ```
 
 The action directory must include the repository's custom actions directory,

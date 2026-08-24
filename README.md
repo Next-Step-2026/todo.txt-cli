@@ -29,10 +29,11 @@ Os metadados de prazo são salvos no final da tarefa utilizando o formato nativo
 
 ### 1. Adicionar Tarefa com Prazo
 
-Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag `-d` (deadline).
+Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag `-d` (deadline). Além do formato absoluto existente, ela aceita prazos relativos em minutos (`m`), horas (`h`) e dias (`d`).
 
-* **Uso:** `./todo.sh add <texto da tarefa> -d <yyyy-mm-dd> <HH:MM>` 
+* **Uso:** `./todo.sh add <texto da tarefa> -d <yyyy-mm-dd> [HH:MM]` ou `./todo.sh add <texto da tarefa> -d m <minutos>`, `-d h <horas[:minutos]>`, `-d d <dias>`
 * **Exemplo:** `./todo.sh add "Finalizar a documentação da API" -d 2026-08-30`
+* **Exemplo relativo:** `./todo.sh add "Finalizar a documentação da API" -d h 1:30`
 * **Comportamento:** O script intercepta a flag `-d`, converte a data para Timestamp Unix (final do dia) e repassa para a função `add` nativa.
 
 ### 2. Gerenciar Prazos (CRUD)
@@ -40,7 +41,7 @@ Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag
 Novos comandos dedicados para adicionar, alterar ou remover o deadline de uma tarefa existente utilizando o seu `id` (número da linha).
 
 * **Adicionar/Atualizar Prazo:**
-* **Uso:** `./todo.sh deadline <id_task> <yyyy-mm-dd> <HH:MM>`
+* **Uso:** `./todo.sh deadline <id_task> <yyyy-mm-dd> [HH:MM]` ou `./todo.sh deadline <id_task> m <minutos>`, `h <horas[:minutos]>`, `d <dias>`
 * **Exemplo:** `./todo.sh deadline 3 2026-08-25`
 * **Comportamento:** Adiciona a tag `due:TIMESTAMP` à tarefa 3. Se a tarefa já possuía um deadline, o valor antigo é removido antes da inserção.
 

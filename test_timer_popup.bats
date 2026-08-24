@@ -56,6 +56,47 @@ teardown() {
   [[ "$output" == *"due:$TIMESTAMP_ESPERADO"* ]]
 }
 
+@test "3a. Comando 'deadline' aceita minutos relativos" {
+  $TODO_SH add "Tarefa em minutos"
+  ANTES=$(date +%s)
+
+  run $TODO_SH deadline 1 m 30
+  [ "$status" -eq 0 ]
+  DEPOIS=$(date +%s)
+  TIMESTAMP=$(sed -n 's/.* due:\([0-9][0-9]*\).*/\1/p' "$TODO_FILE")
+
+  [ "$TIMESTAMP" -ge $((ANTES + 30 * 60)) ]
+  [ "$TIMESTAMP" -le $((DEPOIS + 30 * 60)) ]
+}
+
+@test "3b. Comando 'deadline' aceita horas como H, H:00 e H:MM" {
+  for FORMATO in 1 1:00 1:30; do
+    $TODO_SH add "Tarefa em horas $FORMATO"
+    ANTES=$(date +%s)
+    run $TODO_SH deadline $(wc -l < "$TODO_FILE") h "$FORMATO"
+    [ "$status" -eq 0 ]
+    DEPOIS=$(date +%s)
+    TIMESTAMP=$(sed -n '$s/.* due:\([0-9][0-9]*\).*/\1/p' "$TODO_FILE")
+    MINUTOS_ESPERADOS=60
+    [ "$FORMATO" = "1:30" ] && MINUTOS_ESPERADOS=90
+
+    [ "$TIMESTAMP" -ge $((ANTES + MINUTOS_ESPERADOS * 60)) ]
+    [ "$TIMESTAMP" -le $((DEPOIS + MINUTOS_ESPERADOS * 60)) ]
+  done
+}
+
+@test "3c. Comando 'deadline' aceita dias e add encaminha a nova flag" {
+  ANTES=$(date +%s)
+
+  run $TODO_SH add -d d 7 "Tarefa em dias"
+  [ "$status" -eq 0 ]
+  DEPOIS=$(date +%s)
+  TIMESTAMP=$(sed -n 's/.* due:\([0-9][0-9]*\).*/\1/p' "$TODO_FILE")
+
+  [ "$TIMESTAMP" -ge $((ANTES + 7 * 86400)) ]
+  [ "$TIMESTAMP" -le $((DEPOIS + 7 * 86400)) ]
+}
+
 @test "4 e 5a. Comando 'list' formata a exibição, oculta expiradas e mantem ID estável" {
   TIMESTAMP_PASSADO=$(date -d "2000-01-01 10:30" +%s)
   TIMESTAMP_FUTURO=$(date -d "2050-01-01 10:30" +%s)
