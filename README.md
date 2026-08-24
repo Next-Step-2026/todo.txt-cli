@@ -54,15 +54,17 @@ Novos comandos dedicados para adicionar, alterar ou remover o deadline de uma ta
 
 ---
 
-## ⏰ Módulo Independente de Alarme
+## ⏰ Módulo de Alarme
 
-Preparamos um módulo de notificação visual via pop-up do sistema operacional. Ele foi construído de forma independente para ser facilmente acoplado a futuros scripts da V2 (como um daemon ou cron job).
+O módulo envia uma notificação visual via pop-up do sistema operacional. A ação
+`deadline` o inicia automaticamente em segundo plano após salvar o timestamp,
+para exibir o aviso um minuto antes do prazo.
 
-* **Uso:** `./actions/alarme.sh "<horário>" "<mensagem do popup>"`
-* **Exemplo (Horário fixo):** `./actions/alarme.sh "15:30" "Reunião de Alinhamento" &`
-* **Exemplo (Tempo relativo):** `./actions/alarme.sh "+10 minutes" "Levantar e beber água" &`
+* **Uso automático:** `./todo.sh deadline <id_task> <yyyy-mm-dd> [HH:MM[:SS]]`
+* **Uso direto:** `bash ./actions/alarme.sh "<timestamp>" "<mensagem do popup>" &`
 
-*(Nota: Utilize o `&` no final do comando no terminal para que o script rode em segundo plano sem travar a aba atual).*
+O alarme recebe o timestamp Unix salvo na tag `due:` e usa uma mensagem padrão
+quando nenhuma mensagem personalizada é informada.
 
 ---
 ## Padrões de commits

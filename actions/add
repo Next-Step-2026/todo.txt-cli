@@ -23,12 +23,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ "$TEM_DEADLINE" -eq 1 ]; then
-    TIMESTAMP=$(date -d "$DEADLINE ${DEADLINE_TIME:-23:59:59}" +%s) || exit 1
-    TAREFA_FINAL="$TAREFA_FINAL due:$TIMESTAMP"
     TODOTXT_VERBOSE=0 "$TODO_FULL_SH" command add "$TAREFA_FINAL" || exit $?
 
     TASKNUM=$(sed -n '$ =' "$TODO_FILE")
+    if [ -n "$DEADLINE_TIME" ]; then
+        "$TODO_FULL_SH" deadline "$TASKNUM" "$DEADLINE" "$DEADLINE_TIME" >/dev/null || exit $?
+    else
+        "$TODO_FULL_SH" deadline "$TASKNUM" "$DEADLINE" >/dev/null || exit $?
+    fi
+
     TAREFA_EXIBIDA=$(sed -n "${TASKNUM}p" "$TODO_FILE")
+    TIMESTAMP=$(sed -n "${TASKNUM}p" "$TODO_FILE" | sed -n 's/.* due:\([0-9][0-9]*\).*/\1/p')
     DATA_EXIBIDA=$(date -d "@$TIMESTAMP" +"%d/%m/%Y %H:%M") || exit 1
     TAREFA_EXIBIDA="${TAREFA_EXIBIDA//due:$TIMESTAMP/due:$DATA_EXIBIDA}"
 

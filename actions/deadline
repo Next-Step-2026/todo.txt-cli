@@ -33,6 +33,8 @@ sed -i.bak "${TASK_ID}s/ due:[0-9]*//g" "$TODO_FILE"
 # 4. ADD: Adiciona o novo deadline no final da linha
 sed -i.bak "${TASK_ID}s/$/ due:$TIMESTAMP/" "$TODO_FILE"
 
+# 5. Agenda o alarme em segundo plano para um minuto antes do deadline
+bash "$TODO_ACTIONS_DIR/alarme.sh" "$TIMESTAMP" >/dev/null 2>&1 &
 
 # mudar mensagem para data do deadline
 echo "Deadline configurado para a tarefa $TASK_ID com sucesso! (Timestamp: $TIMESTAMP)"
