@@ -104,6 +104,27 @@ todo.sh del NR [TERM]
 todo.sh rm NR [TERM]
 ```
 
+### `alarme.sh`
+Schedules a pop-up reminder for one minute before the supplied deadline. The
+first argument is the Unix timestamp stored in the task's `due:` metadata. A
+custom pop-up message may be supplied as the second argument.
+
+```shell
+bash actions/alarme.sh TIMESTAMP [MESSAGE]
+bash actions/alarme.sh 1787664600 "Review the report"
+```
+
+For a task with a deadline, use the timestamp after running `deadline`:
+
+```shell
+todo.sh deadline 3 2026-08-25 14:30
+bash actions/alarme.sh TIMESTAMP [MESSAGE] &
+```
+
+The alarm exits with an error when the deadline has already passed or is less
+than one minute away. Run it in the background (`&`) so it does not block the
+terminal while waiting.
+
 ### `depri`
 Deprioritizes (removes the priority) from the task(s) on line NR in todo.txt.
 
