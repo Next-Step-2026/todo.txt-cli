@@ -43,7 +43,11 @@ case "$DEADLINE" in
             echo "Erro: Horário inválido. Use HH:MM ou HH:MM:SS."
             exit 1
         fi
-        TIMESTAMP=$(date -d "$DEADLINE ${DEADLINE_TIME:-23:59:59}" +%s) || exit 1
+        if [ "$(uname -s)" = Darwin ]; then
+            TIMESTAMP=$(date -j -f "%Y-%m-%d %H:%M:%S" "$DEADLINE ${DEADLINE_TIME:-23:59:59}" +%s) || exit 1
+        else
+            TIMESTAMP=$(date -d "$DEADLINE ${DEADLINE_TIME:-23:59:59}" +%s) || exit 1
+        fi
         ;;
 esac
 START_TIMESTAMP=$(( $(date +%s) - 3 * 60 * 60 ))
