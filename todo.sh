@@ -1316,7 +1316,7 @@ case $action in
         else
             die "TODO: No tasks were deleted."
         fi
-        break
+        exit 0
     fi
 
     getTodo "$item"
