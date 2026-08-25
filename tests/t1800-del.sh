@@ -23,6 +23,19 @@ TODO: No task 42.
 EOF
 
 cat > todo.txt <<EOF
+first task
+second task
+EOF
+test_todo_session 'del all tasks' <<EOF
+>>> todo.sh -f del all
+TODO: All tasks deleted.
+
+>>> todo.sh -p list
+--
+TODO: 0 of 0 tasks shown
+EOF
+
+cat > todo.txt <<EOF
 (B) smell the uppercase Roses +flowers @outside
 (A) notice the sunflowers
 stop

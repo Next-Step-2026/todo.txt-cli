@@ -530,6 +530,8 @@ transformDeadlines()
     local file="$1"
     local line
     local timestamp
+    local start_timestamp
+    local deadline_color_marker
     local formatted_date
     local now
     local expired_marker='__TODO_TXT_EXPIRED__'
@@ -538,7 +540,7 @@ transformDeadlines()
         post_filter_command="${post_filter_command:-}${post_filter_command:+ | }grep -v '$expired_marker'"
     fi
     while IFS= read -r line || [ -n "$line" ]; do
-        if [[ "$line" =~ due:([0-9]+) ]]; then
+        if [[ "$line" =~ due:([0-9]+)([[:space:]]|$) ]]; then
             timestamp="${BASH_REMATCH[1]}"
             if [ "$TODOTXT_HIDE_EXPIRED" = 1 ] && [ "$timestamp" -lt "$now" ]; then
                 line="$expired_marker $line"
@@ -548,6 +550,7 @@ transformDeadlines()
             }
             line="${line//due:$timestamp/due:$formatted_date}"
         fi
+        line=$(sed -E 's/[[:space:]]start:[0-9]+//g' <<< "$line")
         printf '%s\n' "$line"
     done < "$file"
 }
@@ -756,6 +759,9 @@ configFileLocations=(
     "$TODOTXT_GLOBAL_CFG_FILE"
 )
 
+: "${TODO_ACTIONS_DIR:=$PWD/actions}"
+export TODO_ACTIONS_DIR
+
 [ -e "$TODOTXT_CFG_FILE" ] || for CFG_FILE_ALT in "${configFileLocations[@]}"; do
     if [ -e "$CFG_FILE_ALT" ]; then
         TODOTXT_CFG_FILE="$CFG_FILE_ALT"
@@ -949,22 +955,36 @@ _list()
     shift # was file name, new $1 is first search term
 
     transformed=$(mktemp "${TMPDIR:-/tmp}/todo-list-date.XXXXXX") || die "TODO: Could not create temporary file."
+    now=$(( $(date +%s) - 3 * 60 * 60 ))
     if [ "$TODOTXT_HIDE_EXPIRED" = 1 ]; then
-        now=$(( $(date +%s) - 3 * 60 * 60 ))
         post_filter_command="${post_filter_command:-}${post_filter_command:+ | }grep -v '$expired_marker'"
     fi
     while IFS= read -r line || [ -n "$line" ]; do
-        if [[ "$line" =~ due:([0-9]+) ]]; then
+        if [[ "$line" =~ due:([0-9]+)([[:space:]]|$) ]]; then
             timestamp="${BASH_REMATCH[1]}"
+            start_timestamp=
+            if [[ "$line" =~ start:([0-9]+)([[:space:]]|$) ]]; then
+                start_timestamp="${BASH_REMATCH[1]}"
+            fi
             if [ "$TODOTXT_HIDE_EXPIRED" = 1 ] && [ "$timestamp" -lt "$now" ]; then
                 line="$expired_marker $line"
+            fi
+            if [ "$timestamp" -lt "$now" ]; then
+                deadline_color_marker='__TODO_TXT_DEADLINE_EXPIRED__'
+            elif [ -n "$start_timestamp" ] && [ "$timestamp" -gt "$start_timestamp" ] && [ "$((timestamp - now))" -le "$(((timestamp - start_timestamp) / 4))" ]; then
+                deadline_color_marker='__TODO_TXT_DEADLINE_SOON__'
+            elif [ -z "$start_timestamp" ] && [ "$timestamp" -le "$((now + TODOTXT_DEADLINE_SOON))" ]; then
+                deadline_color_marker='__TODO_TXT_DEADLINE_SOON__'
+            else
+                deadline_color_marker='__TODO_TXT_DEADLINE_DEFAULT__'
             fi
             formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
                 rm -f "$transformed"
                 die "TODO: Invalid deadline timestamp: $timestamp"
             }
-            line="${line//due:$timestamp/due:$formatted_date}"
+            line="${line//due:$timestamp/${deadline_color_marker}due:${formatted_date}__TODO_TXT_DEADLINE_END__}"
         fi
+        line=$(sed -E 's/[[:space:]]start:[0-9]+//g' <<< "$line")
         printf '%s\n' "$line"
     done < "$src" > "$transformed"
 
@@ -1288,6 +1308,17 @@ case $action in
     # replace deleted line with a blank line when TODOTXT_PRESERVE_LINE_NUMBERS is 1
     errmsg="usage: $TODO_SH del NR [TERM]"
     item=$2
+
+    if [ "$item" = all ]; then
+        if confirm "Delete all tasks"; then
+            sed -i.bak '/./d' "$TODO_FILE"
+            [ "$TODOTXT_VERBOSE" -gt 0 ] && echo "TODO: All tasks deleted."
+        else
+            die "TODO: No tasks were deleted."
+        fi
+        break
+    fi
+
     getTodo "$item"
 
     if [ -z "$3" ]; then

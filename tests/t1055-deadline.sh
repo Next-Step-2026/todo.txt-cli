@@ -16,7 +16,7 @@ test_todo_session 'add and display a deadline' <<'EOF'
 TODO: 1 added.
 
 >>> todo.sh -p ls
-1 prepare breakfast start:1234489200 due:13/02/2009 23:59
+1 prepare breakfast due:13/02/2009 23:59
 --
 TODO: 1 of 1 tasks shown
 EOF
@@ -26,7 +26,7 @@ test_todo_session 'change and remove a deadline' <<'EOF'
 Deadline configurado para a tarefa 1 com sucesso! (Timestamp: 1234655999)
 
 >>> todo.sh -p ls
-1 prepare breakfast start:1234489200 due:14/02/2009 23:59
+1 prepare breakfast due:14/02/2009 23:59
 --
 TODO: 1 of 1 tasks shown
 
@@ -50,14 +50,19 @@ test_todo_session 'hide only expired numeric deadlines' <<'EOF'
 >>> todo.sh -p ls
 2 current task due:13/02/2009 04:40
 3 future task due:13/02/2009 05:40
+4 ordinary metadata due:2018-12-31
 --
-TODO: 2 of 4 tasks shown
+TODO: 3 of 4 tasks shown
 
 EOF
 
-cat > todo.txt <<'EOF'
-far task start:1234400000 due:1234600000
-soon task start:1234400000 due:1234518000
+NOW=$(date +%s)
+START=$((NOW - 4 * 3600))
+FAR=$((NOW - 3 * 3600 + 7200))
+SOON=$((NOW - 3 * 3600 + 600))
+cat > todo.txt <<EOF
+far task start:$START due:$FAR
+soon task start:$START due:$SOON
 EOF
 test_expect_success 'deadline is soon in the final 25 percent' '
 	output=$(todo.sh -c listfile todo.txt) &&
