@@ -116,5 +116,3 @@ Para os desenvolvedores que forem assumir as próximas etapas do projeto, o esco
 ### Como usar isso no seu projeto:
 
 Basta copiar o texto acima, colar num arquivo chamado `README-EQUIPE.md` (ou sobrescrever/acrescentar no final do `README.md` já existente da pasta) e fazer o commit para o Git.
-
-Se a equipe for seguir para a **V2** depois, eu estarei à disposição para ajudá-los a criar a função de letura de datas relativas (`today`, `+2d`) e o filtro de listagem!
