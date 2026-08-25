@@ -29,6 +29,30 @@ Os metadados de prazo são salvos no final da tarefa utilizando o formato nativo
 
 Quando uma tarefa é criada com deadline, o início também é salvo como `start:<timestamp_unix>`. A cor amarela é aplicada quando o tempo restante está dentro dos 25% finais da duração da tarefa. Tarefas antigas sem `start:` usam a janela configurada em `TODOTXT_DEADLINE_SOON` como fallback.
 
+### Como testar as cores
+
+Use `-c` para ativar as cores na listagem. O deadline aparece em:
+
+- **vermelho:** prazo expirado;
+- **amarelo:** prazo dentro dos 25% finais da duração;
+- **cor padrão:** prazo ainda distante.
+
+Para testar as três situações sem depender de datas fixas, execute na raiz do projeto:
+
+```bash
+NOW=$(date +%s)
+cat >> todo.txt <<EOF
+prazo normal start:$((NOW - 3600)) due:$((NOW + 86400))
+prazo proximo start:$((NOW - 4 * 3600)) due:$((NOW - 3 * 3600 + 600))
+prazo expirado due:$((NOW - 3600))
+EOF
+
+./todo.sh -c list
+```
+
+O primeiro prazo deve usar a cor padrão, o segundo amarelo e o terceiro vermelho.
+Para deixar a visualização sem cores, use `./todo.sh -p list`. As cores só alteram a saída; os metadados continuam salvos no `todo.txt`.
+
 ### 1. Adicionar Tarefa com Prazo
 
 Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag `-d` (deadline). Além do formato absoluto existente, ela aceita prazos relativos em minutos (`m`), horas (`h`) e dias (`d`).
