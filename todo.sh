@@ -525,6 +525,16 @@ fixMissingEndOfLine()
     [[ -f $todo_path && $(tail -c1 "$todo_path") ]] && echo "" >> "$todo_path"    
 }
 
+formatTimestamp()
+{
+    local timestamp="$1"
+    if [ "$(uname -s)" = Darwin ]; then
+        date -r "$timestamp" +"%d/%m/%Y %H:%M"
+    else
+        date -d "@$timestamp" +"%d/%m/%Y %H:%M"
+    fi
+}
+
 transformDeadlines()
 {
     local file="$1"
@@ -558,7 +568,7 @@ transformDeadlines()
             else
                 deadline_color_marker='__TODO_TXT_DEADLINE_DEFAULT__'
             fi
-            formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
+            formatted_date=$(formatTimestamp "$timestamp") || {
                 die "TODO: Invalid deadline timestamp: $timestamp"
             }
             line="${line//due:$timestamp/${deadline_color_marker}due:${formatted_date}__TODO_TXT_DEADLINE_END__}"
@@ -991,7 +1001,7 @@ _list()
             else
                 deadline_color_marker='__TODO_TXT_DEADLINE_DEFAULT__'
             fi
-            formatted_date=$(date -d "@$timestamp" +"%d/%m/%Y %H:%M") || {
+            formatted_date=$(formatTimestamp "$timestamp") || {
                 rm -f "$transformed"
                 die "TODO: Invalid deadline timestamp: $timestamp"
             }
