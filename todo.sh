@@ -763,6 +763,12 @@ configFileLocations=(
     fi
 done
 
+# === SANITY CHECKS (thanks Karl!) ===
+[ -r "$TODOTXT_CFG_FILE" ] || dieWithHelp "$1" "Fatal Error: Cannot read configuration file ${TODOTXT_CFG_FILE:-${configFileLocations[0]}}"
+
+# shellcheck source=./todo.cfg
+. "$TODOTXT_CFG_FILE"
+
 if [ -z "$TODO_ACTIONS_DIR" ] || [ ! -d "$TODO_ACTIONS_DIR" ]; then
     TODO_ACTIONS_DIR="$HOME/.todo/actions"
     export TODO_ACTIONS_DIR
@@ -776,12 +782,6 @@ fi
         break
     fi
 done
-
-# === SANITY CHECKS (thanks Karl!) ===
-[ -r "$TODOTXT_CFG_FILE" ] || dieWithHelp "$1" "Fatal Error: Cannot read configuration file ${TODOTXT_CFG_FILE:-${configFileLocations[0]}}"
-
-# shellcheck source=./todo.cfg
-. "$TODOTXT_CFG_FILE"
 
 # === APPLY OVERRIDES
 if [ -n "$OVR_TODOTXT_AUTO_ARCHIVE" ]; then
