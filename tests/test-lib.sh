@@ -457,6 +457,11 @@ test_init_todo () {
 		GNU)
 			cat > bin/date <<-EOF
 			#!/bin/sh
+			for arg do
+				if [ "\$arg" = -d ]; then
+					exec "$TODO_TEST_REAL_DATE" "\$@"
+				fi
+			done
 			exec "$TODO_TEST_REAL_DATE" -d @\$TODO_TEST_TIME \$@
 			EOF
 			chmod 755 bin/date

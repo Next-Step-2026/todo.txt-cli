@@ -1,108 +1,96 @@
-# [![todo.txt-cli](http://todotxt.org/images/todotxt_logo_2012.png)][website]
 
-> A simple and extensible shell script for managing your todo.txt file.
+# ⏱️ Extensões da Equipe: Todo.txt CLI (Backlog V1)
 
-![CI](https://github.com/todotxt/todo.txt-cli/workflows/CI/badge.svg)
-[![GitHub issues](https://img.shields.io/github/issues/todotxt/todo.txt-cli.svg)](https://github.com/todotxt/todo.txt-cli/issues)
-[![GitHub forks](https://img.shields.io/github/forks/todotxt/todo.txt-cli.svg)](https://github.com/todotxt/todo.txt-cli/network)
-[![GitHub stars](https://img.shields.io/github/stars/todotxt/todo.txt-cli.svg)](https://github.com/todotxt/todo.txt-cli/stargazers)
-[![GitHub license](https://img.shields.io/github/license/todotxt/todo.txt-cli.svg)](https://raw.githubusercontent.com/todotxt/todo.txt-cli/master/LICENSE)
-[![Gitter](https://badges.gitter.im/join_chat.svg)](https://gitter.im/todotxt/todo.txt-cli)
+Este diretório contém os scripts customizados (Add-ons) criados pela nossa equipe para adicionar suporte a **Prazos (Deadlines)** e **Alarmes** ao `todo.txt-cli`.
 
-![gif](./.github/example.gif)
+Nós adotamos a filosofia de **nunca alterar o código-fonte original** (`todo.sh`). Todas as novas funcionalidades utilizam o sistema nativo de hooks e ações customizadas.
 
-*Read our [contributing guide][CONTRIBUTING] if you're looking to contribute (issues/PRs/etc).*
+---
 
+## ⚙️ Configuração do Ambiente (Para a Equipe)
 
-## Installation
+Para que os seus testes locais reconheçam estes scripts versionados no Git, é necessário configurar o seu arquivo `todo.cfg` local para apontar para a nossa pasta `actions/`.
 
-### Download
-Download the latest stable [release][release] for use on your desktop or server.
+1. Abra o arquivo `todo.cfg` na raiz do projeto.
+2. Encontre ou adicione a variável `TODO_ACTIONS_DIR`.
+3. Defina o caminho utilizando a variável do diretório atual:
+```bash
+export TODO_ACTIONS_DIR="$PWD/actions"
 
-### OS X / macOS
-
-```shell
-brew install todo-txt
-
-cp -n $(brew --prefix)/opt/todo-txt/todo.cfg ~/.todo.cfg
 ```
 
-**Note**: The `-n` flag for `cp` makes sure you do not overwrite an existing file.
-
-### Linux
-
-#### From command line
-
-```shell
-make
-make install
-make test
-```
-
-*NOTE:* Makefile defaults to several default paths for installed files. Adjust to your system:
-
-- `INSTALL_DIR`: PATH for executables (default `/usr/local/bin`)
-- `CONFIG_DIR`: PATH for the `todo/config` configuration template (default `/usr/local/etc`)
-- `BASH_COMPLETION`: PATH for autocompletion scripts (default to `/usr/local/share/bash-completion/completions`)
-
-```shell
-# Note: Showcasing config overrides for legacy locations; NOT recommended!
-make install CONFIG_DIR=/etc INSTALL_DIR=/usr/bin BASH_COMPLETION=/etc/bash_completion.d
-```
-
-#### Arch Linux (AUR)
-
-https://aur.archlinux.org/packages/todotxt/
 
 
-## Configuration
+---
 
-No configuration is required; however, most users tweak the default settings (e.g. relocating the todo.txt directory to a subdirectory of the user's home directory, or onto a cloud drive (via the `TODO_DIR` variable)), modify the colors, add additional highlighting of projects, contexts, dates, and so on. A configuration template with a commented-out list of all available options is included.
-It is recommended to _copy_ that template into one of the locations listed by `todo.sh help` on `-d CONFIG_FILE`, even if it is installed in the global configuration location (`/etc/todo/config`).
+## 🚀 Funcionalidades da V1
 
-## Usage
-```shell
-todo.sh [-fhpantvV] [-d todo_config] action [task_number] [task_description]
-```
+Os metadados de prazo são salvos no final da tarefa utilizando o formato nativo de chave-valor: `due:<timestamp_unix>`. Isso garante compatibilidade com outras interfaces de todo.txt.
 
-For example, to add a todo item, you can do:
+Quando uma tarefa é criada com deadline, o início também é salvo como `start:<timestamp_unix>`. A cor amarela é aplicada quando o tempo restante está dentro dos 25% finais da duração da tarefa. Tarefas antigas sem `start:` usam a janela configurada em `TODOTXT_DEADLINE_SOON` como fallback.
 
-```shell
-todo.sh add "THING I NEED TO DO +project @context"
-```
-Read about all the possible commands in the [USAGE][USAGE].
+### 1. Adicionar Tarefa com Prazo
+
+Sobrescrevemos o comando `add` original de forma silenciosa para suportar a flag `-d` (deadline). Além do formato absoluto existente, ela aceita prazos relativos em minutos (`m`), horas (`h`) e dias (`d`).
+
+* **Uso:** `./todo.sh add <texto da tarefa> -d <yyyy-mm-dd> [HH:MM]` ou `./todo.sh add <texto da tarefa> -d m <minutos>`, `-d h <horas[:minutos]>`, `-d d <dias>`
+* **Exemplo:** `./todo.sh add "Finalizar a documentação da API" -d 2026-08-30`
+* **Exemplo relativo:** `./todo.sh add "Finalizar a documentação da API" -d h 1:30`
+* **Comportamento:** O script intercepta a flag `-d`, converte a data para Timestamp Unix (final do dia) e repassa para a função `add` nativa.
+
+### 2. Gerenciar Prazos (CRUD)
+
+Novos comandos dedicados para adicionar, alterar ou remover o deadline de uma tarefa existente utilizando o seu `id` (número da linha).
+
+* **Adicionar/Atualizar Prazo:**
+* **Uso:** `./todo.sh deadline <id_task> <yyyy-mm-dd> [HH:MM]` ou `./todo.sh deadline <id_task> m <minutos>`, `h <horas[:minutos]>`, `d <dias>`
+* **Exemplo:** `./todo.sh deadline 3 2026-08-25`
+* **Comportamento:** Adiciona a tag `due:TIMESTAMP` à tarefa 3. Se a tarefa já possuía um deadline, o valor antigo é removido antes da inserção.
 
 
-## Release History
-
-See [CHANGELOG.md][CHANGELOG]
-
-
-## Support
-
-- [GitHub Discussions](https://github.com/todotxt/todo.txt-cli/discussions): questions, troubleshooting, ideas and suggestions
-- [GitHub Issues](https://github.com/todotxt/todo.txt-cli/issues): report bugs and request features here (after positive feedback in the chat or discussions)
-
-## Community
-
-- [Gitter.im](https://gitter.im/todotxt/): chat with the core team and interested users
-- [Reddit](https://www.reddit.com/r/todotxt/): posts and discussions around the todo.txt philosophy and tools
-- [Twitter](https://twitter.com/todotxt): official announcements and news
-
-## Contributing
-
-We welcome all contributions. First read our [Contributor Code of Conduct][CODE_OF_CONDUCT] and then get started [contributing][CONTRIBUTING]. By participating in this project you agree to abide by its terms.
-
-## License
-
-GNU General Public License v3.0 © [todo.txt org][github]
+* **Remover Prazo:**
+* **Uso:** `./todo.sh rmdeadline <id_task>`
+* **Exemplo:** `./todo.sh rmdeadline 3`
+* **Comportamento:** Remove de forma limpa a tag `due:` da tarefa especificada. Se não houver deadline, nada acontece.
 
 
 
-[release]: https://github.com/todotxt/todo.txt-cli/releases
-[website]: http://todotxt.org/
-[github]: https://github.com/todotxt
-[USAGE]: ./USAGE.md
-[CHANGELOG]: ./CHANGELOG.md
-[CODE_OF_CONDUCT]: .github/CODE_OF_CONDUCT.md
-[CONTRIBUTING]: .github/CONTRIBUTING.md
+---
+
+## ⏰ Módulo de Alarme
+
+O módulo envia uma notificação visual via pop-up do sistema operacional. A ação
+`deadline` o inicia automaticamente em segundo plano após salvar o timestamp,
+para exibir o aviso um minuto antes do prazo.
+
+* **Uso automático:** `./todo.sh deadline <id_task> <yyyy-mm-dd> [HH:MM[:SS]]`
+* **Uso direto:** `bash ./actions/alarme.sh "<timestamp>" "<mensagem do popup>" &`
+
+O alarme recebe o timestamp Unix salvo na tag `due:` e usa uma mensagem padrão
+quando nenhuma mensagem personalizada é informada.
+
+---
+## Padrões de commits
+
+Para commits, usaremos o padrão de [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), em inglês
+
+- `<type>(optional scope): <description>`
+
+
+---
+
+## 🔜 Próximos Passos (Backlog V2)
+
+Para os desenvolvedores que forem assumir as próximas etapas do projeto, o escopo da V2 inclui:
+
+* [ ] `notify_when_expired()`: Criação de um job em background que lê o arquivo `todo.txt`, procura por tags `due:` vencidas que não tenham o status `x` (done), e aciona o `alarme.sh`.
+* [ ] Suporte a datas relativas na CLI (ex: `./todo.sh add Tarefa -d today`, ou `-d +2d`).
+* [ ] Filtros de listagem customizados (ex: `./todo.sh ls --date <deadline>`).
+
+---
+
+### Como usar isso no seu projeto:
+
+Basta copiar o texto acima, colar num arquivo chamado `README-EQUIPE.md` (ou sobrescrever/acrescentar no final do `README.md` já existente da pasta) e fazer o commit para o Git.
+
+Se a equipe for seguir para a **V2** depois, eu estarei à disposição para ajudá-los a criar a função de letura de datas relativas (`today`, `+2d`) e o filtro de listagem!

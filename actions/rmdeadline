@@ -1,0 +1,15 @@
+#!/bin/bash
+# Uso: ./todo.sh rmdeadline <id_task>
+
+shift # Pula o $1 (que é a palavra 'rmdeadline')
+
+TASK_ID=$1
+
+if [ -z "$TASK_ID" ]; then
+    echo "Uso: todo.sh rmdeadline <Numero_da_Tarefa>"
+    exit 1
+fi
+
+sed -i.bak -e "${TASK_ID}s/ due:[0-9]*//g" -e "${TASK_ID}s/ start:[0-9]*//g" "$TODO_FILE"
+
+echo "Deadline removido da tarefa $TASK_ID."
