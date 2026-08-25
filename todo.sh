@@ -1207,7 +1207,7 @@ hasCustomAction()
     return 1
 }
 
-export -f cleaninput getPrefix getTodo getNewtodo filtercommand _list listWordsWithSigil getPadding _format die
+export -f cleaninput formatTimestamp getPrefix getTodo getNewtodo filtercommand _list listWordsWithSigil getPadding _format die
 
 # == HANDLE ACTION ==
 action=$(printf "%s\n" "$ACTION" | tr '[:upper:]' '[:lower:]')

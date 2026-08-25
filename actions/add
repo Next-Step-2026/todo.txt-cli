@@ -38,7 +38,7 @@ if [ "$TEM_DEADLINE" -eq 1 ]; then
 
     TAREFA_EXIBIDA=$(sed -n "${TASKNUM}p" "$TODO_FILE")
     TIMESTAMP=$(sed -n "${TASKNUM}p" "$TODO_FILE" | sed -n 's/.* due:\([0-9][0-9]*\).*/\1/p')
-    DATA_EXIBIDA=$(date -d "@$TIMESTAMP" +"%d/%m/%Y %H:%M") || exit 1
+    DATA_EXIBIDA=$(formatTimestamp "$TIMESTAMP") || exit 1
     TAREFA_EXIBIDA="${TAREFA_EXIBIDA//due:$TIMESTAMP/due:$DATA_EXIBIDA}"
     TAREFA_EXIBIDA=$(sed -E 's/ start:[0-9]+//g' <<< "$TAREFA_EXIBIDA")
 
